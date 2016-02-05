@@ -6,10 +6,10 @@
 const char* ssid     = "EEGu_2_4GHz";
 const char* password = "";
 
-const char* led_topic = "/home/esp/com";
+const char* led_topic = "/home/huzzah1/led";
 
-const char* humidity_topic = "/home/humidity/state";
-const char* temperature_topic = "/home/temp/state";
+const char* humidity_topic = "/home/huzzah1/temp";
+const char* temperature_topic = "/home/huzzah1/humidity";
 
 IPAddress mqtt_server(192, 168, 15, 102); 
 
