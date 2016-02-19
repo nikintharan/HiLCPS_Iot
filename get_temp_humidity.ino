@@ -11,7 +11,7 @@ const char* led_topic = "/home/huzzah1/led";
 const char* humidity_topic = "/home/huzzah1/humidity";
 const char* temperature_topic = "/home/huzzah1/temp";
 
-IPAddress mqtt_server(192, 168, 15, 104); 
+IPAddress mqtt_server(192, 168, 15, 104); //CHANGE IP ADDRESS TO CURRENT ADDRESS OF BEAGLEBONE
 
 WiFiClient espClient;
 PubSubClient client(espClient);
