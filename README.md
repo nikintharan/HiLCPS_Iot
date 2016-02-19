@@ -9,3 +9,5 @@ http://mosquitto.org/2013/01/mosquitto-debian-repository/
 
 PubSub Client Documentation:
 http://pubsubclient.knolleary.net/
+
+Advanced functionalities: https://ifttt.com/recipes
