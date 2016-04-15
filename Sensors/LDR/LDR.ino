@@ -1,15 +1,20 @@
+#include <Adafruit_HDC1000.h>
+#include <Wire.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
 const char* ssid     = "EEGu_2_4GHz";
 const char* password = "";
+const char* pir_topic = "/home/huzzah1/ldr";
+const int analogInPin = A0;  // Analog input pin that the LDR is attached to
 
-const char* led_topic = "/home/huzzah2/led";
-
-IPAddress mqtt_server(192, 168, 15, 102); 
+IPAddress mqtt_server(192, 168, 15, 104); //CHANGE IP ADDRESS TO CURRENT ADDRESS OF BEAGLEBONE
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+Adafruit_HDC1000 hdc = Adafruit_HDC1000();
+
+int oldState = 0, newState = 0;
 
 void setup_wifi() {
   delay(10);
@@ -40,7 +45,6 @@ void reconnect_mqtt() {
     // if (client.connect("ESP8266Client")) {
     if (client.connect("ESP8266Client")) {
       Serial.println("connected");
-      client.subscribe(led_topic);
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -77,23 +81,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   Serial.println();
 
-  // Switch on the LED if an 1 was received as first character
-  if ((char)payload[0] == '1') {
-    digitalWrite(0, LOW);   // Turn the LED on (Note that LOW is the voltage level
-    // but actually the LED is on; this is because
-    // it is acive low on the ESP-01)
-  } else {
-    digitalWrite(0, HIGH);  // Turn the LED off by making the voltage HIGH
-  }
-
 }
 
 void setup() {
   // put your setup code here, to run once:
-  
-  //set on-board LED to output, off by default (HIGH) 
-  pinMode(0, OUTPUT);
-  digitalWrite(0, HIGH);
+  pinMode(13, OUTPUT);     
+
   
   Serial.begin(115200);
   setup_wifi();
@@ -102,7 +95,21 @@ void setup() {
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
 
+  // Set SDA and SDL ports
+  Wire.begin(2, 14);
+
+  // Start sensor
+  if (!hdc.begin()) {
+    Serial.println("Couldn't find sensor!");
+    while (1);
+  }
+  
 }
+
+int sensorValue = 0;        // value read from the pot
+int outputValue = 0;        // value output to the PWM (analog out)
+long lastMsg = 0;
+
 void loop() {
   //reconnect to mosquitto server if disconnected
   if (!client.connected()) {
@@ -116,4 +123,25 @@ void loop() {
   
   //loop that runs for mosquitto actions 
   client.loop();
+
+  long now = millis();
+  if (now - lastMsg > 1000) {
+    lastMsg = now;
+  }
+
+  digitalWrite(13, HIGH);
+
+  // read the analog in value:
+  sensorValue = analogRead(analogInPin);
+  
+  // print the results to the serial monitor:
+  Serial.print("sensor = ");
+  Serial.print(sensorValue);
+  Serial.println();
+  // wait 2 milliseconds before the next loop
+  // for the analog-to-digital converter to settle
+  // after the last reading:
+  delay(2);
+  
 }
+
