@@ -79,6 +79,7 @@ void reconnect_wifi() {
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
+  
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
@@ -92,10 +93,18 @@ void callback(char* topic, byte* payload, unsigned int length) {
   code = message.substring(0,message.indexOf(',')).toInt();
   bitLen = message.substring(message.indexOf(',')+1,message.lastIndexOf(',')).toInt();
   pulseLen = message.substring(message.lastIndexOf(',')+1).toInt();
+  Serial.println(pulseLen);
 
   //Set correct pulse length from message, transmit code at specified bitlength
   mySwitch.setPulseLength(pulseLen);
   mySwitch.send(code, bitLen);
+
+  //Clear payload 
+  int n=0;
+  while (payload[n] != 0) {
+    payload[n] = 0;
+    n++;
+  }
 }
 
 void setup() {
