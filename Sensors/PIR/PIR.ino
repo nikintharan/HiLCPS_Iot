@@ -1,18 +1,15 @@
-#include <Adafruit_HDC1000.h>
 #include <Wire.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
 const char* ssid     = "EEGu_2_4GHz";
 const char* password = "";
-const char* pir_topic = "/home/huzzah1/pir";
-const char* motion = "Motion Detected!";
+const char* pir_topic = "/home/pir";
 
 IPAddress mqtt_server(192, 168, 15, 104); //CHANGE IP ADDRESS TO CURRENT ADDRESS OF BEAGLEBONE
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-Adafruit_HDC1000 hdc = Adafruit_HDC1000();
 
 int oldState = 0, newState = 0;
 
@@ -83,32 +80,26 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 }
 
-void setup() {
-  // put your setup code here, to run once:
-  //pinMode(12, INPUT);     // declare sensor as input
- // pinMode(16, OUTPUT);     
-
-  
+void setup() {    
   Serial.begin(115200);
   setup_wifi();
+
+  //Data from PIR read on pin 2
+  pinMode(2, INPUT);
+  
+  //TESTING 
+  pinMode(0, OUTPUT);
+  digitalWrite(0, HIGH);
   
   //set up mosquitto connection 
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
 
-  // Set SDA and SDL ports
-  Wire.begin(2, 14);
 
-  // Start sensor
-  if (!hdc.begin()) {
-    Serial.println("Couldn't find sensor!");
-    while (1);
-  }
 }
 
-long lastMsg = 0;
 int val=0;
-int pirState = LOW;             // we start, assuming no motion detected
+int pirState = LOW;
 
 void loop() {
   //reconnect to mosquitto server if disconnected
@@ -123,21 +114,17 @@ void loop() {
   
   //loop that runs for mosquitto actions 
   client.loop();
-
-  long now = millis();
-  if (now - lastMsg > 1000) {
-    lastMsg = now;
-
+  
   // Motion Sensor
-  val = digitalRead(12);  // read input value
+  val = digitalRead(2);  // read input value
   if (val == HIGH) {            // check if the input is HIGH
     if (pirState == LOW) {
       // we have just turned on
       Serial.println("Motion detected!");
-        digitalWrite(16, HIGH);
+        digitalWrite(0, LOW);
 
       // Publish to Mosquitto 
-       client.publish(pir_topic,String(motion).c_str(), true);
+       client.publish(pir_topic, "1", true);
     
       // We only want to print on the output change, not state
       pirState = HIGH;
@@ -146,14 +133,14 @@ void loop() {
     if (pirState == HIGH){
       // we have just turned of
       Serial.println("Motion ended!");
-        digitalWrite(16, LOW);
+        digitalWrite(0, HIGH);
       
       //Publish to Mosquitto 
-       client.publish(pir_topic,String(motion).c_str(), true);
+       client.publish(pir_topic, "0", true);
       // We only want to print on the output change, not state
       pirState = LOW;
     }
   }
-  }
 }
+
 
