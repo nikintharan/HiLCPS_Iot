@@ -92,8 +92,7 @@ void setup() {
 
 int sensorValue = 0;        // value read from the pot
 long lastMsg = 0;
-char* outmessage;
-String pubStr;
+char outmessage[10];
 
 void loop() {
   //reconnect to mosquitto server if disconnected
@@ -122,9 +121,8 @@ void loop() {
     Serial.print(sensorValue);
     Serial.println();
     
-    //convert integer value to string
-    pubStr = String(sensorValue);
-    pubStr.toCharArray(outmessage, pubStr.length()+1);
+    //convert integer value to char*
+    sprintf(outmessage,"%d",sensorValue);
 
     //publish value to topic
     client.publish(topic, outmessage, true);
