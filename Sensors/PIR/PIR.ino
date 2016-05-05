@@ -40,7 +40,7 @@ void reconnect_mqtt() {
     // Attempt to connect
     // If you do not want to use a username and password, change next line to
     // if (client.connect("ESP8266Client")) {
-    if (client.connect("ESP8266Client")) {
+    if (client.connect("PIR_ESP")) {
       Serial.println("connected");
     } else {
       Serial.print("failed, rc=");
