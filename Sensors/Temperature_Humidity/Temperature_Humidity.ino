@@ -3,50 +3,52 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
+//Wifi connection variables and setup
 const char* ssid     = "EEGu_2_4GHz";
 const char* password = "";
 
-const char* led_topic = "/home/huzzah1/led";
-
+//MQTT variables and setup
 const char* humidity_topic = "/home/huzzah1/humidity";
 const char* temperature_topic = "/home/huzzah1/temp";
-
 IPAddress mqtt_server(192, 168, 15, 104); //CHANGE IP ADDRESS TO CURRENT ADDRESS OF BEAGLEBONE
-
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+//create object for sensor
 Adafruit_HDC1000 hdc = Adafruit_HDC1000();
 
-int oldState = 0, newState = 0;
-
+//Sets up the initial Wifi connection
 void setup_wifi() {
   delay(10);
-  // We start by connecting to a WiFi network
+  // Print info to Serial console
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
+  //attempt connection
   WiFi.begin(ssid, password);
-
+ 
+  //print "." for each half second while waiting to connect
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
 
+  //print success to Serial console
   Serial.println("");
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 }
 
+//Reconnects to MQTT client if disconnected
 void reconnect_mqtt() {
   // Loop until we're reconnected to client
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
-    // Attempt to connect
-    // If you do not want to use a username and password, change next line to
-    // if (client.connect("ESP8266Client")) {
-    if (client.connect("ESP8266Client")) {
+    //Every Huzzah needs to be named differently, or they will alternate
+    //trying to connect, and will never execute any code. 
+    if (client.connect("Temp_ESP")) {
       Serial.println("connected");
       client.subscribe(led_topic);
     } else {
@@ -59,6 +61,7 @@ void reconnect_mqtt() {
   }
 }
 
+//If wifi connection is disrupted, attempt to reconnect
 void reconnect_wifi() {
   Serial.print("Wifi disconnected, reconnecting to ");
   Serial.println(ssid);
@@ -76,41 +79,18 @@ void reconnect_wifi() {
   Serial.println(WiFi.localIP());
 }
 
-void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
-
-  // Switch on the LED if an 1 was received as first character
-  if ((char)payload[0] == '1') {
-    digitalWrite(0, LOW);   // Turn the LED on (Note that LOW is the voltage level
-    // but actually the LED is on; this is because
-    // it is acive low on the ESP-01)
-  } else {
-    digitalWrite(0, HIGH);  // Turn the LED off by making the voltage HIGH
-  }
-
-}
-
-void setup() {
-  // put your setup code here, to run once:
-  
-  //set on-board LED to output, off by default (HIGH) 
-  pinMode(0, OUTPUT);
-  digitalWrite(0, HIGH);
-  
+//Runs once upon startup
+void setup() {  
+  //Set up serial console (rate in baud)
   Serial.begin(115200);
+
+  //setup wifi connection
   setup_wifi();
   
   //set up mosquitto connection 
   client.setServer(mqtt_server, 1883);
-  client.setCallback(callback);
 
-  // Set SDA and SDL ports
+  // Set SDA and SDL ports for HDC
   Wire.begin(2, 14);
 
   // Start sensor
@@ -120,11 +100,12 @@ void setup() {
   }
 }
 
-long lastMsg = 0;
-float temp = 0.0;
-float hum = 0.0;
-float diff = 1.0;
+long lastMsg = 0;   //Time of last message
+long now = 0;       //Current time
+float temp = 0.0;   //Measured temperature in celcius
+float hum = 0.0;    //Measured humidity in %
 
+//Continuously runs while Huzzah remains on
 void loop() {
   //reconnect to mosquitto server if disconnected
   if (!client.connected()) {
@@ -139,7 +120,10 @@ void loop() {
   //loop that runs for mosquitto actions 
   client.loop();
 
-  long now = millis();
+  //get current time since startup
+  now = millis();
+
+  //only execute every second
   if (now - lastMsg > 1000) {
     lastMsg = now;
 

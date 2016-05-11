@@ -2,43 +2,50 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
-const char* ssid     = "EEGu_2_4GHz";
-const char* password = "";
-const char* topic = "/home/ldr";
 const int analogInPin = A0;  // Analog input pin that the LDR is attached to
 
-IPAddress mqtt_server(192, 168, 15, 104); //CHANGE IP ADDRESS TO CURRENT ADDRESS OF BEAGLEBONE
+//Wifi connection variables and setup
+const char* ssid     = "EEGu_2_4GHz";
+const char* password = "";
 
+//MQTT variables and setup
+const char* topic = "/home/ldr";
+IPAddress mqtt_server(192, 168, 15, 106); //CHANGE IP ADDRESS TO CURRENT ADDRESS OF BEAGLEBONE
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+
+//Sets up the initial Wifi connection
 void setup_wifi() {
   delay(10);
-  // We start by connecting to a WiFi network
+  // Print info to Serial console
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
+  //attempt connection
   WiFi.begin(ssid, password);
 
+  //print "." for each half second while waiting to connect
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
 
+  //print success to Serial console
   Serial.println("");
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 }
 
+//Reconnects to MQTT client if disconnected
 void reconnect_mqtt() {
   // Loop until we're reconnected to client
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
-    // Attempt to connect
-    // If you do not want to use a username and password, change next line to
-    // if (client.connect("ESP8266Client")) {
+    //Every Huzzah needs to be named differently, or they will alternate
+    //trying to connect, and will never execute any code. 
     if (client.connect("ESP8266Client")) {
       Serial.println("connected");
     } else {
@@ -51,6 +58,7 @@ void reconnect_mqtt() {
   }
 }
 
+//If wifi connection is disrupted, attempt to reconnect
 void reconnect_wifi() {
   Serial.print("Wifi disconnected, reconnecting to ");
   Serial.println(ssid);
@@ -68,31 +76,22 @@ void reconnect_wifi() {
   Serial.println(WiFi.localIP());
 }
 
-void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
-
-}
-
+//Runs once upon startup
 void setup() {
-  // put your setup code here, to run once:
+  //Set up serial console (rate in baud)
   Serial.begin(115200);
+
+  //setup wifi connection
   setup_wifi();
   
   //set up mosquitto connection 
-  client.setServer(mqtt_server, 1883);
-  client.setCallback(callback);
- 
+  client.setServer(mqtt_server, 1883); 
 }
 
-int sensorValue = 0;        // value read from the pot
-long lastMsg = 0;
-char outmessage[10];
+int sensorValue = 0;  // value read from the LDR
+long lastMsg = 0;     // time of last message sent
+long now = 0;         // current time since startup
+char outmessage[10];  // message to be sent
 
 void loop() {
   //reconnect to mosquitto server if disconnected
@@ -108,8 +107,8 @@ void loop() {
   //loop that runs for mosquitto actions 
   client.loop();
 
-  //only update every second
-  long now = millis();
+  //only update every 3 seconds
+  now = millis();
   if (now - lastMsg > 3000) {
     lastMsg = now;
 

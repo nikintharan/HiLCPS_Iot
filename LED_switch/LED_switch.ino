@@ -1,52 +1,50 @@
-#include <Adafruit_ESP8266.h>
-#include <WiFiEsp.h>
-#include <WiFiEspClient.h>
-#include <WiFiEspServer.h>
-#include <WiFiEspUdp.h>
-
-//#include <ESP8266WiFi.h>
+#include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
+//Wifi connection variables and setup
 const char* ssid     = "EEGu_2_4GHz";
 const char* password = "";
 
-const char* led_topic = "/home/huzzah2/led";
-
-IPAddress mqtt_server(192, 168, 15, 102); 
-
+//MQTT variables and setup
+const char* topic = "/home/huzzah2/led";
+IPAddress mqtt_server(192, 168, 15, 106); 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+//Sets up the initial Wifi connection
 void setup_wifi() {
   delay(10);
-  // We start by connecting to a WiFi network
+  // Print info to Serial console
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
+  //attempt connection
   WiFi.begin(ssid, password);
 
+  //print "." for each half second while waiting to connect
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
 
+  //print success to Serial console
   Serial.println("");
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 }
 
+//Reconnects to MQTT client if disconnected
 void reconnect_mqtt() {
   // Loop until we're reconnected to client
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
-    // Attempt to connect
-    // If you do not want to use a username and password, change next line to
-    // if (client.connect("ESP8266Client")) {
-    if (client.connect("ESP8266Client")) {
+    //Every Huzzah needs to be named differently, or they will alternate
+    //trying to connect, and will never execute any code. 
+    if (client.connect("LED_ESP")) {
       Serial.println("connected");
-      client.subscribe(led_topic);
+      client.subscribe(topic);
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -57,6 +55,7 @@ void reconnect_mqtt() {
   }
 }
 
+//If wifi connection is disrupted, attempt to reconnect
 void reconnect_wifi() {
   Serial.print("Wifi disconnected, reconnecting to ");
   Serial.println(ssid);
@@ -74,7 +73,9 @@ void reconnect_wifi() {
   Serial.println(WiFi.localIP());
 }
 
+//Handles incoming messages and what to do with them
 void callback(char* topic, byte* payload, unsigned int length) {
+  //Print message
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
@@ -94,21 +95,25 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 }
 
-void setup() {
-  // put your setup code here, to run once:
-  
+//Runs once upon startup
+void setup() {  
   //set on-board LED to output, off by default (HIGH) 
   pinMode(0, OUTPUT);
   digitalWrite(0, HIGH);
-  
+
+  //Set up serial console (rate in baud)
   Serial.begin(115200);
+  
+  //setup wifi connection
   setup_wifi();
   
-  //set up mosquitto connection 
+  //set up mosquitto connection and callback function
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
 
 }
+
+//Continuously runs while Huzzah remains on
 void loop() {
   //reconnect to mosquitto server if disconnected
   if (!client.connected()) {
