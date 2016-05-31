@@ -55,24 +55,6 @@ void reconnect_mqtt() {
   }
 }
 
-//If wifi connection is disrupted, attempt to reconnect
-void reconnect_wifi() {
-  Serial.print("Wifi disconnected, reconnecting to ");
-  Serial.println(ssid);
-
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-}
-
 //Runs once upon startup
 void setup() {    
   //Set up serial console (rate in baud)
@@ -100,11 +82,6 @@ void loop() {
   //reconnect to mosquitto server if disconnected
   if (!client.connected()) {
     reconnect_mqtt();
-  }
-
-  //reconnect to wifi if disconnected 
-  if (WiFi.status() != WL_CONNECTED) {
-    reconnect_wifi();
   }
   
   //loop that runs for mosquitto actions 
