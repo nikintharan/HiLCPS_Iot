@@ -2,12 +2,8 @@
  *  stored WiFi SSID and password. If connection is
  *  unsuccessful, the Arduino will go into AP mode and
  *  host a page with an HTML form to get WiFi credentials.
- *  When successful, the ESP will then use mDNS to look for
- *  any openHAB services on the network, and will attempt 
- *  to connect to an MQTT server at the address of the 
- *  first service that it finds. For testing purposes, 
- *  you can turn the onboard LED on and off using openHAB
- *  and MQTT
+ *  When successful, the ESP will attempt to connect
+ *  to the MQTT server at the specified IP 
  */
 
 
@@ -15,6 +11,7 @@
 #include <PubSubClient.h>
 #include <ESP8266WebServer.h>
 #include <EEPROM.h>
+#include <ESP8266mDNS.h>
 
 //data structure to hold wifi name and password
 //for EEPROM storage
@@ -40,7 +37,6 @@ ESP8266WebServer server(80);
 
 //MQTT variables and setup
 const char* topic = "/home/huzzah2/led";
-IPAddress mqtt_server(192, 168, 15, 106); 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
@@ -193,6 +189,50 @@ void setup_wifi() {
   Serial.println("WiFi connected.");
 }
 
+// uses mDNS to look for openHAB service, then
+// tries to get IP address to connect to MQTT
+// server on same device
+void setup_mqtt() {
+
+  // set up hostname for ESP
+  char hostString[16] = {0};
+  sprintf(hostString, "ESP_%06X", ESP.getChipId());
+  WiFi.hostname(hostString);
+
+  //check to make sure mDNS is working
+  if (!MDNS.begin(hostString)) {
+    Serial.println("Error setting up MDNS responder!");
+  }
+  
+  //look for openHAB service
+  Serial.println("Sending mDNS query");
+  int n = MDNS.queryService("openhab-server", "tcp"); // Send out query for esp tcp services
+  Serial.println("mDNS query done");
+  if (n == 0) {
+    Serial.println("no services found");
+  }
+  else {
+    Serial.print(n);
+    Serial.println(" service(s) found");
+    for (int i = 0; i < n; ++i) {
+      // Print details for each service found
+      Serial.print(i + 1);
+      Serial.print(": ");
+      Serial.print(MDNS.hostname(i));
+      Serial.print(" (");
+      Serial.print(MDNS.IP(i));
+      Serial.print(":");
+      Serial.print(MDNS.port(i));
+      Serial.println(")");
+    }
+    
+    // set up mosquitto connection and callback function
+    // using first service found
+    client.setServer(MDNS.IP(0), 1883);
+    client.setCallback(callback);
+  }
+}
+
 //Runs once upon startup
 void setup() {  
   //Set up serial console (rate in baud)
@@ -201,10 +241,7 @@ void setup() {
   Serial.setDebugOutput(true);
 
   setup_wifi();
-
-  //set up mosquitto connection and callback function
-  client.setServer(mqtt_server, 1883);
-  client.setCallback(callback);
+  setup_mqtt();
     
   //set on-board LED to output, off by default (HIGH) 
   pinMode(0, OUTPUT);
