@@ -1,0 +1,109 @@
+/* 
+ * Rules for sending MQTT messages involved with remote outlets
+ */
+
+import org.openhab.core.library.types.*
+
+
+//Settings specific for Dimmer Module
+val String bitLen = "24"
+val String pulseLen = "185"
+var String code = " "
+var String message = " "
+
+/**********************************************/
+
+/* Rule for turning Outlet 1 On/Off */
+rule "Outlet 1 On/Off"
+
+when
+	Item Outlet1 changed
+
+then
+	if (Outlet1.state == ON)
+		code = "4527411"
+	else if (Outlet1.state == OFF)
+		code = "4527420"
+
+
+	message = code + ","  + bitLen + "," + pulseLen
+	sendCommand( TXData, message )
+end
+
+/**********************************************/
+
+/* Rule for turning Outlet 2 On/Off */
+rule "Outlet 2 On/Off"
+
+when
+	Item Outlet2 changed
+
+then
+	if (Outlet2.state == ON)
+		code = "4527555"
+	else if (Outlet2.state == OFF)
+		code = "4527564"
+
+
+	message = code + ","  + bitLen + "," + pulseLen
+	sendCommand( TXData, message )
+end
+
+/**********************************************/
+
+/* Rule for turning Outlet 3 On/Off */
+rule "Outlet 3 On/Off"
+
+when
+	Item Outlet3 changed
+
+then
+	if (Outlet3.state == ON)
+		code = "4527875"
+	else if (Outlet3.state == OFF)
+		code = "4527884"
+
+
+	message = code + ","  + bitLen + "," + pulseLen
+	sendCommand( TXData, message )
+end
+
+/**********************************************/
+
+/* Rule for turning Outlet 4 On/Off */
+rule "Outlet 4 On/Off"
+
+when
+	Item Outlet4 changed
+
+then
+	if (Outlet4.state == ON)
+		code = "4529411"
+	else if (Outlet4.state == OFF)
+		code = "4529420"
+
+
+	message = code + ","  + bitLen + "," + pulseLen
+	sendCommand( TXData, message )
+end
+
+/**********************************************/
+
+/* Rule for turning Outlet 5 On/Off */
+rule "Outlet 5 On/Off"
+
+when
+	Item Outlet5 changed
+
+then
+	if (Outlet5.state == ON)
+		code = "4535555"
+	else if (Outlet5.state == OFF)
+		code = "4535564"
+
+
+	message = code + ","  + bitLen + "," + pulseLen
+	sendCommand( TXData, message )
+end
+
+

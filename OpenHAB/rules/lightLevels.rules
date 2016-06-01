@@ -1,0 +1,22 @@
+/* 
+ * Rules for designating light levels
+ */
+
+import org.openhab.core.library.types.*
+
+
+/**********************************************/
+
+/* Rule for Dimmer On/Off Switch */
+rule "Lights at Night"
+
+when
+	Item Lux changed
+
+then
+	if (Lux.state < 200)
+		
+	
+end
+
+

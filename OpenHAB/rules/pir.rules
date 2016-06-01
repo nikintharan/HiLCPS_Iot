@@ -1,0 +1,92 @@
+/* 
+ * Rules for when PIR senses motion
+ */
+
+import org.openhab.core.library.types.*
+import org.joda.time.*
+
+val String bitLen = "24"
+val String pulseLen = "391" //Setting for Dimmer
+var String code = " "
+var String message = " "
+
+var Number counter = 0
+var Number lastCheck = 0
+var boolean turnedOn = false
+
+/**********************************************/
+
+/* Rule for Turning on Lights at Night */
+rule "PIR Lights On"
+
+when
+	Item Presence changed to 1
+
+then 	
+	counter = counter + 1
+	if (!turnedOn) {		
+		turnedOn = true		
+		
+		//if very dark, turn on light and set to lowest brightness
+		if (Lux.state < 300) {
+			message = "11043073" + ","  + bitLen + "," + pulseLen
+   		     	sendCommand( TXData, message )
+			Thread::sleep(500) 
+			message = "11043081" + "," + bitLen + "," + pulseLen
+			sendCommand( TXData, message )
+		}
+		//if room is already lit, turn lights to brightest
+		else if (Lux.state < 900) {
+			message = "11043073" + ","  + bitLen + "," + pulseLen
+        		sendCommand( TXData, message )
+			Thread::sleep(500) 
+			message = "11043079" + "," + bitLen + "," + pulseLen
+			sendCommand( TXData, message )	
+		}
+		else {
+			counter = 0
+			turnedOn = false
+		}
+	}
+	
+end
+
+/**********************************************/
+
+/* Turn lights off after a minute of no motion detected */
+rule "PIR Lights Off"
+
+when
+	Time cron "0 * * * * ?"
+
+then
+	if ((lastCheck == counter) && turnedOn) {
+		counter = 0
+		lastCheck = -1
+		message = "11043073" + ","  + bitLen + "," + pulseLen
+        	sendCommand( TXData, message )
+		turnedOn = false
+	}	
+	else {
+		lastCheck = counter
+	}
+end
+
+
+/**********************************************/
+
+/* Reset variables when system restarts */
+rule "Reset PIR variables"
+
+when
+	System started
+
+then
+	code = " "
+	message = " "
+
+	counter = 0
+	lastCheck = 0
+	turnedOn = false
+
+end

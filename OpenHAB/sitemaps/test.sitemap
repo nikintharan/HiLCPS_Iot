@@ -1,0 +1,30 @@
+//Declaring an item in a sitemap file creates a
+//component in the UI. Items here reference items
+//in an item file 
+
+//Declare Sitemap
+sitemap test label="Smart Home"
+{
+	//Create a section on main page for outlets and sensors
+	Frame label="MQTT" {
+        	Switch item=Outlet1 label="Outlet 1"
+ 		Switch item=Outlet2 label="Outlet 2"
+		Switch item=Outlet3 label="Outlet 3"
+		Switch item=Outlet4 label="Outlet 4"
+		Switch item=Outlet5 label="Outlet 5"
+		Text item=Huzzah1_temp
+		Text item=Lux
+		Text item=Presence
+	
+		//create subpage for dimmer controls
+		Text label="Dimmer" icon="slider" {
+			Switch item=DimSwitch label="Dimmer On/Off"
+			Switch item=DimPercents label="Quick Toggle" mappings=[1="100%", 2="50%", 3="25%"]
+			Slider item=DimBrightness
+			Setpoint item=DimMode minValue=1 maxValue=8 step=1
+		}
+	}
+
+   
+}
+

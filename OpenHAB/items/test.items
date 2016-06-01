@@ -1,0 +1,55 @@
+/*
+ *  Two different switch items that are controlled through MQTT topics 
+ */
+Switch Huzzah1_LED {mqtt=">[broker:/home/huzzah1/led:command:on:1],
+                     >[broker:/home/huzzah1/led:command:off:0],
+                     <[broker:/home/huzzah1/led:state:default]"}
+
+Switch Huzzah2_LED {mqtt=">[broker:/home/huzzah2/led:command:on:1],
+                     >[broker:/home/huzzah2/led:command:off:0],
+                     <[broker:/home/huzzah2/led:state:default]"}
+
+/*
+ *  These switches are declared just for use in the UI, but are
+ *  controlled using the outlet rules file and the TXData item
+ *  below.
+ */
+Group Outlets
+Switch Outlet1 (Outlets)
+Switch Outlet2 (Outlets) 
+Switch Outlet3 (Outlets) 
+Switch Outlet4 (Outlets) 
+Switch Outlet5 (Outlets) 
+
+
+/*  Dimmer Items
+ *
+ *  Similarly as the outlets above, these items are for use
+ *  in the UI and are also controlled using a rule file and
+ *  the TXData item
+ */
+Switch DimSwitch
+Number DimPercents <settings>
+Dimmer DimBrightness "Brightness [%d %%]" <slider>
+Number DimMode "Mode [%d]" <settings>
+
+
+/*  Sensors
+ *
+ *  These items are used to report values sent through MQTT topics
+ */
+Number Presence "Motion [MAP(pir.map):%s]" {mqtt="<[broker:/home/pir:state:default]"}
+
+Number Huzzah1_temp "Temperature [%.1f °C]" <temperature> 
+              {mqtt="<[broker:/home/huzzah1/temp:state:default]"}
+
+Number Lux "Lux: [%d]" <slider> {mqtt="<[broker:/home/ldr:state:default]"}
+
+
+/*  Transmitter
+ *
+ *  Sends general RF signal data and configuration info for use with
+ *  the Arduino library "RCSwitch". Data should be in the form of
+ *  "code,bitLength,pulseLength"
+ */
+String TXData {mqtt=">[broker:/home/TX:command:*:default]"}

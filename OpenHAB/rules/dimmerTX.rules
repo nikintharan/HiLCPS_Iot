@@ -1,0 +1,96 @@
+/* 
+ * Rules for sending MQTT messages involved with the Dimmer
+ */
+
+import org.openhab.core.library.types.*
+
+
+//Settings specific for Dimmer Module
+val String bitLen = "24"
+val String pulseLen = "391" //Setting for Dimmer
+var String code = " "
+var String message = " "
+var Number prevMode = 0
+var Number bright = 0	
+
+/**********************************************/
+
+/* Rule for Dimmer On/Off Switch */
+rule "Dimmer Switch MQTT"
+
+when
+	Item DimSwitch changed
+
+then 
+	//return sitemap value of DimMode to 1
+	//sendCommand( DimMode.state, 1)
+
+	message = "11043073" + ","  + bitLen + "," + pulseLen
+	sendCommand( TXData, message )
+end
+
+
+/**********************************************/
+
+/* Rule for Changing Dimmer by percentages */
+rule "Dim Percents MQTT"
+
+when
+	Item DimPercents changed
+
+then
+	//Return sitemap value of DimMode to 1
+	//sendCommand( DimMode.state, 1)
+
+	if (DimPercents.state == 1) {	//100%
+		code = "11043079"
+		bright = 20		//change bright value
+	}
+	else if (DimPercents.state == 2) {	//50%
+		code = "11043080"
+		bright = 10
+	}
+	else if (DimPercents.state == 3) {	//25%
+		code = "11043081"
+		bright = 5
+	}
+	message = code + ","  + bitLen + "," + pulseLen
+	sendCommand( TXData, message )
+end
+
+/**********************************************/
+
+/* Rule for changing modes */
+rule "Dim Modes"
+
+when
+	Item DimMode changed
+
+then
+	if (DimMode.state < prevMode)
+		code = "11043089"
+	else if (DimMode.state > prevMode)
+		code = "11043083"
+
+	message = code + ","  + bitLen + "," + pulseLen
+	sendCommand( TXData, message )
+
+	prevMode = DimMode.state
+end
+
+/**********************************************/
+
+/* Rule for changing brightness */
+rule "Dim Slider"
+
+when
+	Item DimBrightness changed
+
+then
+	bright = DimBrightness.state / 5
+
+	message = code + ","  + bitLen + "," + pulseLen
+	sendCommand( TXData, message )
+
+	prevBrightness = DimBrightness.state
+end
