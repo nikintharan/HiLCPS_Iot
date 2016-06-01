@@ -2,8 +2,10 @@
  *  stored WiFi SSID and password. If connection is
  *  unsuccessful, the Arduino will go into AP mode and
  *  host a page with an HTML form to get WiFi credentials.
- *  When successful, the ESP will attempt to connect
- *  to the MQTT server at the specified IP 
+ *  When successful, the ESP will then use mDNS to look 
+ *  for openHAB services on the network and will attempt 
+ *  to connect to the MQTT server at the first location 
+ *  it finds.
  */
 
 
