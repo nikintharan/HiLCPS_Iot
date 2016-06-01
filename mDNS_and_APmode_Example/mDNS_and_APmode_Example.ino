@@ -21,10 +21,10 @@ struct wifiConfig {
 };
 wifiConfig configs;
 
-//address to access/store data in EEPROM
+// address to access/store data in EEPROM
 int eeAddress = 0;
 
-//HTML module that gets SSID and password info from user
+// HTML form that gets SSID and password info from user
 String form = "<h2> Please enter your WiFi information here: </h2>"
               "<form action='/submit' method='post'>"
               "SSID: <input type='text' name='ssid'> <br />"
@@ -35,17 +35,19 @@ String form = "<h2> Please enter your WiFi information here: </h2>"
 // HTTP server will listen at port 80
 ESP8266WebServer server(80);
 
-//MQTT variables and setup
+// MQTT variables and setup
 const char* topic = "/home/huzzah2/led";
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-//used to keep track of time
+// used to keep track of time
 long now = 0, lastTime = 0;
 
-//used to track if user has submmitted wifi info
+// used to track if user has submmitted wifi info
 bool isSubmit = false;
 
+// to store unique ESP hostname
+char hostString[16] = {0};
 
 
 //Reconnects to MQTT client if disconnected
@@ -55,7 +57,7 @@ void reconnect_mqtt() {
     Serial.print("Attempting MQTT connection...");
     //Every Huzzah needs to be named differently, or they will alternate
     //trying to connect, and will never execute any code. 
-    if (client.connect("config_ESP")) {
+    if (client.connect(hostString)) {
       Serial.println("connected");
       client.subscribe(topic);
     } else {
@@ -195,7 +197,6 @@ void setup_wifi() {
 void setup_mqtt() {
 
   // set up hostname for ESP
-  char hostString[16] = {0};
   sprintf(hostString, "ESP_%06X", ESP.getChipId());
   WiFi.hostname(hostString);
 
