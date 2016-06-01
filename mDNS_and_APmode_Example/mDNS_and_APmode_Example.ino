@@ -52,26 +52,6 @@ bool isSubmit = false;
 char hostString[16] = {0};
 
 
-//Reconnects to MQTT client if disconnected
-void reconnect_mqtt() {
-  // Loop until we're reconnected to client
-  while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
-    //Every Huzzah needs to be named differently, or they will alternate
-    //trying to connect, and will never execute any code. 
-    if (client.connect(hostString)) {
-      Serial.println("connected");
-      client.subscribe(topic);
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      // Wait 5 seconds before retrying
-      delay(5000);
-    }
-  }
-}
-
 //Handles incoming messages and what to do with them
 void callback(char* topic, byte* payload, unsigned int length) {
   //Print message
@@ -132,7 +112,7 @@ void setup_AP() {
     // put ESP in AP mode
     // HTML page at 192.168.4.1
     WiFi.mode(WIFI_AP);
-    WiFi.softAP("ESPAP", "password");
+    WiFi.softAP(hostString, "");
 
     //loop will exit when user has entered info
     while (!isSubmit) {
@@ -166,7 +146,8 @@ void setup_AP() {
 // use EEPROM to connect to WiFi. If first time, user can enter
 // SSID and password information
 void setup_wifi() {
-  //clear config arrays to make way for new info
+  
+  // clear config arrays to make way for new info
   memset(configs.ssid, 0, sizeof(configs.ssid));
   memset(configs.password, 0, sizeof(configs.password));
   
@@ -175,7 +156,7 @@ void setup_wifi() {
   EEPROM.get(eeAddress, configs);
   WiFi.begin(configs.ssid, configs.password);
   
-  //wait 5 seconds for wifi to attempt to connect
+  // wait 5 seconds for wifi to attempt to connect
   lastTime = millis();
   now = lastTime;
   while (WiFi.status() != WL_CONNECTED) {
@@ -189,18 +170,16 @@ void setup_wifi() {
   while (WiFi.status() != WL_CONNECTED) {
     setup_AP();
   }
-
   Serial.println("WiFi connected.");
+  
+  // set hostname
+  WiFi.hostname(hostString);
 }
 
 // uses mDNS to look for openHAB service, then
 // tries to get IP address to connect to MQTT
 // server on same device
 void setup_mqtt() {
-
-  // set up hostname for ESP
-  sprintf(hostString, "ESP_%06X", ESP.getChipId());
-  WiFi.hostname(hostString);
 
   //check to make sure mDNS is working
   if (!MDNS.begin(hostString)) {
@@ -233,16 +212,35 @@ void setup_mqtt() {
     // using first service found
     client.setServer(MDNS.IP(0), 1883);
     client.setCallback(callback);
+
+    // Loop until we're reconnected to client
+    Serial.print("Attempting MQTT connection...");
+    //Every Huzzah needs to be named differently, or they will alternate
+    //trying to connect, and will never execute any code. 
+    if (client.connect(hostString)) {
+      Serial.println("connected");
+      client.subscribe(topic);
+    } 
+    else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
   }
 }
 
-//Runs once upon startup
+// Runs once upon startup
 void setup() {  
   //Set up serial console (rate in baud)
   Serial.begin(115200);
   Serial.println("");
   Serial.setDebugOutput(true);
 
+  // get unique hostname
+  sprintf(hostString, "ESP_%06X", ESP.getChipId());
+  
   setup_wifi();
   setup_mqtt();
     
@@ -256,7 +254,7 @@ void loop() {
   
   //reconnect to mosquitto server if disconnected
   if (!client.connected()) {
-    reconnect_mqtt();
+    setup_mqtt();
   }
   
   //loop that runs for mosquitto actions 
