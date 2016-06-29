@@ -1,3 +1,5 @@
+Wiki: https://nuforge.coe.neu.edu/gf/project/iot/wiki/?pagename=FrontPage
+
 Sitemap:
 http://beaglebone.local:8888/openhab.app?sitemap=test
 
